@@ -1,4 +1,4 @@
-TARGET = output/cUsage
+TARGET = bin/cUsage
 
 # Clang:
 # CC = clang
@@ -8,25 +8,26 @@ TARGET = output/cUsage
 CC = gcc
 CFLAGS = -std=c11 -Wall -Wextra -pthread
 
-# Dirs and includes"
+# Dirs and includes
 SRC_DIR = src
 INCLUDE_DIR = include
 INCLUDES = -I$(INCLUDE_DIR)
+BUILD_DIR = build
 
 # Sources:
 SOURCES = $(wildcard $(SRC_DIR)/*.c)
-OBJECTS = $(SOURCES:.c=.o)
+OBJECTS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SOURCES))
 
 all: $(TARGET)
 $(TARGET): $(OBJECTS)
-	$(CC) $(CFLAGS) $(INCLUDES) $(OBJECTS) -o $(TARGET)
+	$(CC) $(CFLAGS) $(OBJECTS) -o $(TARGET)
 
-%.o: %.c
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 run: $(TARGET)
 	./$(TARGET)
 
 clean:
-	rm -f $(TARGET) test_$(TARGET) $(OBJECTS)
+	rm -f $(TARGET) test_$(TARGET) $(BUILD_DIR)/*.o
 
