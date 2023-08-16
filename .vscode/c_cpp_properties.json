@@ -4,7 +4,7 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:/MinGW/include/"
+                "C:/msys64/mingw64/include/"
             ],
             "defines": [
                 "_DEBUG",
@@ -12,7 +12,7 @@
                 "_UNICODE"
             ],
             "configurationProvider": "ms-vscode.makefile-tools",
-            "compilerPath": "C:/MinGW/bin/gcc.exe",
+            "compilerPath": "C:/msys64/mingw64/bin/gcc.exe",
             "intelliSenseMode": "windows-gcc-x64",
             "cStandard": "c11"
         }

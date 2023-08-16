@@ -1,6 +1,9 @@
-#include <stdio.h>
+#include <pthread.h>
+#include "reader.h"
 
 int main()
 {
-    printf("Hello World!");
-}
+    pthread_t reader_thread;
+    pthread_create(&reader_thread, NULL, *reader_task, NULL);
+    pthread_join(reader_thread ,NULL);
+}   
