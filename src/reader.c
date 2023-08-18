@@ -2,6 +2,7 @@
 
 struct timespec reader_sleep_time = {1, 0};
 unsigned int core_num = 0;
+CoreData *core_data = NULL;
 
 unsigned int count_core_num()
 {
@@ -41,8 +42,16 @@ void *reader_task()
         exit(1);
     }
 
+    core_data = (CoreData *)malloc(core_num * sizeof(CoreData));
+    if (core_data == NULL)
+    {
+        perror("Failed to allocate memory for core_data array...\n");
+        exit(1);
+    }
+
     while (1)
     {
+
         nanosleep(&reader_sleep_time, NULL);
     }
 }
