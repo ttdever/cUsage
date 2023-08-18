@@ -11,8 +11,8 @@ unsigned int count_core_num()
 
     if (stat_file == NULL)
     {
-        perror("Error opening stat file");
-        return 0;
+        perror("Error opening \"/proc/stat\" file...\n");
+        exit(1);
     }
 
     while (fgets(line, sizeof(line), stat_file))
@@ -23,7 +23,7 @@ unsigned int count_core_num()
         }
         else if (strncmp(line, "int", 3) == 0)
         {
-            core_counter--;
+            core_counter = core_counter == 0 ? core_counter : core_counter - 1;
             break;
         }
     }
@@ -35,6 +35,11 @@ unsigned int count_core_num()
 void *reader_task()
 {
     core_num = count_core_num();
+    if (core_num == 0)
+    {
+        perror("Wasn't able to count CPU cores...\n");
+        exit(1);
+    }
 
     while (1)
     {
