@@ -7,14 +7,14 @@ CoreData *core_data = NULL;
 unsigned int count_core_num()
 {
     FILE *stat_file = fopen("/proc/stat", "r");
+    char line[4];
+    unsigned int core_counter = 0;
+
     if (stat_file == NULL)
     {
         perror("Error opening \"/proc/stat\" file...\n");
         exit(1);
     }
-
-    char line[4];
-    unsigned int core_counter = 0;
 
     while (fgets(line, sizeof(line), stat_file))
     {
@@ -36,26 +36,25 @@ unsigned int count_core_num()
 void read_proc_stat(CoreData *core_array, unsigned int num_of_cores)
 {
     FILE *stat_file = fopen("/proc/stat", "r");
+    const char reading_format[] = "cpu%d %llu %llu %llu %llu %llu %llu %llu %llu";
+    char line[256];
+    unsigned int core_id;
+
     if (stat_file == NULL)
     {
         perror("Error opening \"/proc/stat\" file...\n");
         exit(1);
     }
 
-    const char general_reading_format[54] = "cpu%d %%llu %%llu %%llu %%llu %%llu %%llu %%llu %%llu\0";
-    char line[256];
-    unsigned int core_id;
-
-    fgets(line, 256, stat_file); // Skip first line of file with general cpu information
+    fgets(line, sizeof(line), stat_file); // Skip first line of file with general cpu information
     for (core_id = 0; core_id < num_of_cores; ++core_id)
     {
-        char indexed_reading_format[50];
-        snprintf(indexed_reading_format, sizeof(indexed_reading_format), general_reading_format, core_id);
-
-        fgets(line, 256, stat_file);
-        sscanf(line, indexed_reading_format,
-               &core_array[core_id].user, &core_array[core_id].nice, &core_array[core_id].system, &core_array[core_id].idle,
-               &core_array[core_id].iowait, &core_array[core_id].irq, &core_array[core_id].soft_irq, &core_array[core_id].steal);
+        fgets(line, sizeof(line), stat_file);
+        sscanf(line, reading_format,
+               &core_id, &core_array[core_id].user, &core_array[core_id].nice,
+               &core_array[core_id].system, &core_array[core_id].idle,
+               &core_array[core_id].iowait, &core_array[core_id].irq,
+               &core_array[core_id].soft_irq, &core_array[core_id].steal);
     }
 
     fclose(stat_file);
@@ -63,8 +62,9 @@ void read_proc_stat(CoreData *core_array, unsigned int num_of_cores)
 
 void print_core_stat_array(CoreData *core_array, unsigned int num_of_cores)
 {
-    printf("%2s | %4s | %4s | %6s | %10s | %6s | %3s | %8s | %4s\n", "ID", "User", "Nice", "System", "Idle", "IOwait", "irq", "soft_irq", "steal");
     unsigned int core_id;
+
+    printf("%2s | %4s | %4s | %6s | %10s | %6s | %3s | %8s | %4s\n", "ID", "User", "Nice", "System", "Idle", "IOwait", "irq", "soft_irq", "steal");
     for (core_id = 0; core_id < num_of_cores; ++core_id)
     {
         printf("%2u | %4llu | %4llu | %6llu | %10llu | %6llu | %3llu | %8llu | %4llu\n",
@@ -73,8 +73,9 @@ void print_core_stat_array(CoreData *core_array, unsigned int num_of_cores)
     }
 }
 
-void *reader_task()
+void *reader_task(void *arg)
 {
+    (void)arg;
     core_num = count_core_num();
     if (core_num == 0)
     {

@@ -1,12 +1,12 @@
 TARGET = bin/cUsage
 
 # Clang:
-# CC = clang
-# CFLAGS = -std=c11 -Weverything -pthread
+CC = clang
+CFLAGS = -std=c11 -Weverything -pthread
 
-# GCC:
-CC = gcc
-CFLAGS = -std=c11 -Wall -Wextra -pthread
+# # GCC:
+# CC = gcc
+# CFLAGS = -std=c11 -Wall -Wextra -pthread
 
 # Dirs and includes
 SRC_DIR = src

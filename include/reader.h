@@ -24,9 +24,9 @@ extern struct timespec reader_sleep_time;
 extern unsigned int core_num;
 extern CoreData *core_data;
 
-unsigned int count_core_num();
+unsigned int count_core_num(void);
 void read_proc_stat(CoreData *core_array, unsigned int num_of_cores);
 void print_core_stat_array(CoreData *core_array, unsigned int num_of_cores);
-void *reader_task();
+void *reader_task(void *arg);
 
 #endif
