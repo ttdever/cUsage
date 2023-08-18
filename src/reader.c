@@ -20,7 +20,7 @@ unsigned int count_core_num()
     {
         if (strncmp(line, "cpu", 3) == 0)
         {
-            core_counter++;
+            ++core_counter;
         }
         else if (strncmp(line, "int", 3) == 0)
         {
@@ -53,14 +53,24 @@ void read_proc_stat(CoreData *core_array, unsigned int num_of_cores)
         snprintf(indexed_reading_format, sizeof(indexed_reading_format), general_reading_format, core_id);
 
         fgets(line, 256, stat_file);
-        printf("%d: %s | %s\n", core_id, indexed_reading_format, line);
-
         sscanf(line, indexed_reading_format,
                &core_array[core_id].user, &core_array[core_id].nice, &core_array[core_id].system, &core_array[core_id].idle,
                &core_array[core_id].iowait, &core_array[core_id].irq, &core_array[core_id].soft_irq, &core_array[core_id].steal);
     }
 
     fclose(stat_file);
+}
+
+void print_core_stat_array(CoreData *core_array, unsigned int num_of_cores)
+{
+    printf("%2s | %4s | %4s | %6s | %10s | %6s | %3s | %8s | %4s\n", "ID", "User", "Nice", "System", "Idle", "IOwait", "irq", "soft_irq", "steal");
+    unsigned int core_id;
+    for (core_id = 0; core_id < num_of_cores; ++core_id)
+    {
+        printf("%2u | %4llu | %4llu | %6llu | %10llu | %6llu | %3llu | %8llu | %4llu\n",
+               core_id, core_array[core_id].user, core_array[core_id].nice, core_array[core_id].system, core_array[core_id].idle,
+               core_array[core_id].iowait, core_array[core_id].irq, core_array[core_id].soft_irq, core_array[core_id].steal);
+    }
 }
 
 void *reader_task()
@@ -81,7 +91,10 @@ void *reader_task()
 
     while (1)
     {
+        system("clear");
         read_proc_stat(core_data, core_num);
+        print_core_stat_array(core_data, core_num);
+        system("cat /proc/stat");
         nanosleep(&reader_sleep_time, NULL);
     }
 }
