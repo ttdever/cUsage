@@ -47,6 +47,7 @@ void read_proc_stat(SharedCoreData *shared_core_data, unsigned int num_of_cores)
     }
 
     fgets(line, sizeof(line), stat_file); // Skip first line of file with general cpu information
+    pthread_mutex_lock(&shared_core_data->mutex);
     for (core_id = 0; core_id < num_of_cores; ++core_id)
     {
         fgets(line, sizeof(line), stat_file);
@@ -56,6 +57,7 @@ void read_proc_stat(SharedCoreData *shared_core_data, unsigned int num_of_cores)
                &shared_core_data->core_data_array[core_id].iowait, &shared_core_data->core_data_array[core_id].irq,
                &shared_core_data->core_data_array[core_id].soft_irq, &shared_core_data->core_data_array[core_id].steal);
     }
+    pthread_mutex_unlock(&shared_core_data->mutex);
 
     fclose(stat_file);
 }
@@ -65,12 +67,14 @@ void print_core_stat_array(SharedCoreData *shared_core_data, unsigned int num_of
     unsigned int core_id;
 
     printf("%2s | %4s | %4s | %6s | %10s | %6s | %3s | %8s | %4s\n", "ID", "User", "Nice", "System", "Idle", "IOwait", "irq", "soft_irq", "steal");
+    pthread_mutex_lock(&shared_core_data->mutex);
     for (core_id = 0; core_id < num_of_cores; ++core_id)
     {
         printf("%2u | %4llu | %4llu | %6llu | %10llu | %6llu | %3llu | %8llu | %4llu\n",
                core_id, shared_core_data->core_data_array[core_id].user, shared_core_data->core_data_array[core_id].nice, shared_core_data->core_data_array[core_id].system, shared_core_data->core_data_array[core_id].idle,
                shared_core_data->core_data_array[core_id].iowait, shared_core_data->core_data_array[core_id].irq, shared_core_data->core_data_array[core_id].soft_irq, shared_core_data->core_data_array[core_id].steal);
     }
+    pthread_mutex_unlock(&shared_core_data->mutex);
 }
 
 void *reader_task(void *arg)
@@ -84,12 +88,20 @@ void *reader_task(void *arg)
         exit(1);
     }
 
+    if (pthread_mutex_init(&shared_core_data.mutex, NULL) != 0)
+    {
+        perror("Failed to init mutex...\n");
+        exit(1);
+    }
+
+    pthread_mutex_lock(&shared_core_data.mutex);
     shared_core_data.core_data_array = (CoreData *)calloc(core_num, sizeof(CoreData));
     if (shared_core_data.core_data_array == NULL)
     {
         perror("Failed to allocate memory for core_data array...\n");
         exit(1);
     }
+    pthread_mutex_unlock(&shared_core_data.mutex);
 
     while (1)
     {
