@@ -16,7 +16,8 @@ typedef struct CoreData
 typedef struct SharedCoreData
 {
     pthread_mutex_t mutex;
-    CoreData *core_data_array;
+    CoreData *core_data_array_previous;
+    CoreData *core_data_array_current;
 } SharedCoreData;
 
 #endif

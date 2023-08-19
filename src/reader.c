@@ -3,6 +3,7 @@
 struct timespec reader_sleep_time = {1, 0};
 unsigned int core_num = 0;
 SharedCoreData shared_core_data = {};
+pthread_cond_t reader_cond = PTHREAD_COND_INITIALIZER;
 
 unsigned int count_core_num()
 {
@@ -33,7 +34,7 @@ unsigned int count_core_num()
     return core_counter;
 }
 
-void read_proc_stat(SharedCoreData *shared_core_data, unsigned int num_of_cores)
+void read_proc_stat(SharedCoreData *shared_core_data, const unsigned int num_of_cores, const bool previous)
 {
     FILE *stat_file = fopen("/proc/stat", "r");
     const char reading_format[] = "cpu%d %llu %llu %llu %llu %llu %llu %llu %llu";
@@ -51,29 +52,56 @@ void read_proc_stat(SharedCoreData *shared_core_data, unsigned int num_of_cores)
     for (core_id = 0; core_id < num_of_cores; ++core_id)
     {
         fgets(line, sizeof(line), stat_file);
-        sscanf(line, reading_format,
-               &core_id, &shared_core_data->core_data_array[core_id].user, &shared_core_data->core_data_array[core_id].nice,
-               &shared_core_data->core_data_array[core_id].system, &shared_core_data->core_data_array[core_id].idle,
-               &shared_core_data->core_data_array[core_id].iowait, &shared_core_data->core_data_array[core_id].irq,
-               &shared_core_data->core_data_array[core_id].soft_irq, &shared_core_data->core_data_array[core_id].steal);
+        if (previous)
+        {
+            sscanf(line, reading_format,
+                   &core_id, &shared_core_data->core_data_array_previous[core_id].user, &shared_core_data->core_data_array_previous[core_id].nice,
+                   &shared_core_data->core_data_array_previous[core_id].system, &shared_core_data->core_data_array_previous[core_id].idle,
+                   &shared_core_data->core_data_array_previous[core_id].iowait, &shared_core_data->core_data_array_previous[core_id].irq,
+                   &shared_core_data->core_data_array_previous[core_id].soft_irq, &shared_core_data->core_data_array_previous[core_id].steal);
+        }
+        else
+        {
+            sscanf(line, reading_format,
+                   &core_id, &shared_core_data->core_data_array_current[core_id].user, &shared_core_data->core_data_array_current[core_id].nice,
+                   &shared_core_data->core_data_array_current[core_id].system, &shared_core_data->core_data_array_current[core_id].idle,
+                   &shared_core_data->core_data_array_current[core_id].iowait, &shared_core_data->core_data_array_current[core_id].irq,
+                   &shared_core_data->core_data_array_current[core_id].soft_irq, &shared_core_data->core_data_array_current[core_id].steal);
+        }
     }
     pthread_mutex_unlock(&shared_core_data->mutex);
 
     fclose(stat_file);
 }
 
-void print_core_stat_array(SharedCoreData *shared_core_data, unsigned int num_of_cores)
+void print_core_stat_array(SharedCoreData *shared_core_data, const unsigned int num_of_cores)
 {
     unsigned int core_id;
 
+    printf("Previous:\n");
     printf("%2s | %4s | %4s | %6s | %10s | %6s | %3s | %8s | %4s\n", "ID", "User", "Nice", "System", "Idle", "IOwait", "irq", "soft_irq", "steal");
     pthread_mutex_lock(&shared_core_data->mutex);
+
     for (core_id = 0; core_id < num_of_cores; ++core_id)
     {
         printf("%2u | %4llu | %4llu | %6llu | %10llu | %6llu | %3llu | %8llu | %4llu\n",
-               core_id, shared_core_data->core_data_array[core_id].user, shared_core_data->core_data_array[core_id].nice, shared_core_data->core_data_array[core_id].system, shared_core_data->core_data_array[core_id].idle,
-               shared_core_data->core_data_array[core_id].iowait, shared_core_data->core_data_array[core_id].irq, shared_core_data->core_data_array[core_id].soft_irq, shared_core_data->core_data_array[core_id].steal);
+               core_id, shared_core_data->core_data_array_previous[core_id].user, shared_core_data->core_data_array_previous[core_id].nice,
+               shared_core_data->core_data_array_previous[core_id].system, shared_core_data->core_data_array_previous[core_id].idle,
+               shared_core_data->core_data_array_previous[core_id].iowait, shared_core_data->core_data_array_previous[core_id].irq,
+               shared_core_data->core_data_array_previous[core_id].soft_irq, shared_core_data->core_data_array_previous[core_id].steal);
     }
+
+    printf("\nCurrent:\n");
+    printf("%2s | %4s | %4s | %6s | %10s | %6s | %3s | %8s | %4s\n", "ID", "User", "Nice", "System", "Idle", "IOwait", "irq", "soft_irq", "steal");
+    for (core_id = 0; core_id < num_of_cores; ++core_id)
+    {
+        printf("%2u | %4llu | %4llu | %6llu | %10llu | %6llu | %3llu | %8llu | %4llu\n",
+               core_id, shared_core_data->core_data_array_current[core_id].user, shared_core_data->core_data_array_current[core_id].nice,
+               shared_core_data->core_data_array_current[core_id].system, shared_core_data->core_data_array_current[core_id].idle,
+               shared_core_data->core_data_array_current[core_id].iowait, shared_core_data->core_data_array_current[core_id].irq,
+               shared_core_data->core_data_array_current[core_id].soft_irq, shared_core_data->core_data_array_current[core_id].steal);
+    }
+
     pthread_mutex_unlock(&shared_core_data->mutex);
 }
 
@@ -95,8 +123,9 @@ void *reader_task(void *arg)
     }
 
     pthread_mutex_lock(&shared_core_data.mutex);
-    shared_core_data.core_data_array = (CoreData *)calloc(core_num, sizeof(CoreData));
-    if (shared_core_data.core_data_array == NULL)
+    shared_core_data.core_data_array_previous = (CoreData *)calloc(core_num, sizeof(CoreData));
+    shared_core_data.core_data_array_current = (CoreData *)calloc(core_num, sizeof(CoreData));
+    if (shared_core_data.core_data_array_previous == NULL || shared_core_data.core_data_array_current == NULL)
     {
         perror("Failed to allocate memory for core_data array...\n");
         exit(1);
@@ -105,9 +134,9 @@ void *reader_task(void *arg)
 
     while (1)
     {
-        system("clear");
-        read_proc_stat(&shared_core_data, core_num);
-        print_core_stat_array(&shared_core_data, core_num);
+        read_proc_stat(&shared_core_data, core_num, true);
         nanosleep(&reader_sleep_time, NULL);
+        read_proc_stat(&shared_core_data, core_num, false);
+        pthread_cond_signal(&reader_cond);
     }
 }

@@ -7,12 +7,13 @@
 #include <string.h>
 #include <time.h>
 #include <regex.h>
+#include <stdbool.h>
 #include "structs.h"
 
 extern struct timespec reader_sleep_time;
 
 unsigned int count_core_num(void);
-void read_proc_stat(SharedCoreData *shared_core_data, unsigned int num_of_cores);
+void read_proc_stat(SharedCoreData *shared_core_data, unsigned int num_of_cores, bool previous);
 void print_core_stat_array(SharedCoreData *shared_core_data, unsigned int num_of_cores);
 void *reader_task(void *arg);
 
