@@ -20,13 +20,19 @@ typedef struct CoreData
     unsigned long long int steal;
 } CoreData;
 
+typedef struct SharedCoreData
+{
+    pthread_mutex_t mutex;
+    CoreData *core_data_array;
+} SharedCoreData;
+
 extern struct timespec reader_sleep_time;
 extern unsigned int core_num;
-extern CoreData *core_data;
+extern SharedCoreData shared_core_data;
 
 unsigned int count_core_num(void);
-void read_proc_stat(CoreData *core_array, unsigned int num_of_cores);
-void print_core_stat_array(CoreData *core_array, unsigned int num_of_cores);
+void read_proc_stat(SharedCoreData *shared_core_data, unsigned int num_of_cores);
+void print_core_stat_array(SharedCoreData *shared_core_data, unsigned int num_of_cores);
 void *reader_task(void *arg);
 
 #endif
