@@ -1,12 +1,12 @@
 #include "analyzer.h"
 
 unsigned int *cpu_pload = NULL;
+pthread_mutex_t printer_reader_mutex;
 
-void calculate_core_pload(SharedCoreData *core_data, const unsigned int num_of_cores)
+void calculate_core_pload(const SharedCoreData *core_data, const unsigned int num_of_cores)
 {
 
     unsigned int core_id;
-    system("clear");
     for (core_id = 0; core_id < num_of_cores; ++core_id)
     {
         unsigned long long int idle = core_data->core_data_array_current[core_id].idle + core_data->core_data_array_current[core_id].iowait;
@@ -29,8 +29,6 @@ void calculate_core_pload(SharedCoreData *core_data, const unsigned int num_of_c
         unsigned int core_percentage_load = total_delta == 0 ? 0 : (unsigned int)((total_delta - idle_delta) * 100 / total_delta);
 
         cpu_pload[core_id] = core_percentage_load;
-
-        printf("%d -> %d%%\n", core_id, core_percentage_load);
     }
 }
 
@@ -45,11 +43,20 @@ void *analyzer_task(void *args)
         exit(1);
     }
 
+    if (pthread_mutex_init(&printer_reader_mutex, NULL) != 0)
+    {
+        perror("Failed to init printer-reader mutex...\n");
+        exit(1);
+    }
+
     while (1)
     {
         pthread_mutex_lock(&shared_core_data.mutex);
         pthread_cond_wait(&reader_cond, &shared_core_data.mutex);
+        pthread_mutex_lock(&printer_reader_mutex);
         calculate_core_pload(&shared_core_data, core_num);
+        pthread_mutex_unlock(&printer_reader_mutex);
+        pthread_cond_signal(&printer_cond);
         pthread_mutex_unlock(&shared_core_data.mutex);
     }
 }

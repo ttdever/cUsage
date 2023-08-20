@@ -75,37 +75,6 @@ void read_proc_stat(SharedCoreData *core_data, const unsigned int num_of_cores, 
     fclose(stat_file);
 }
 
-void print_core_stat_array(SharedCoreData *core_data, const unsigned int num_of_cores)
-{
-    unsigned int core_id;
-
-    printf("Previous:\n");
-    printf("%2s | %4s | %4s | %6s | %10s | %6s | %3s | %8s | %4s\n", "ID", "User", "Nice", "System", "Idle", "IOwait", "irq", "soft_irq", "steal");
-    pthread_mutex_lock(&core_data->mutex);
-
-    for (core_id = 0; core_id < num_of_cores; ++core_id)
-    {
-        printf("%2u | %4llu | %4llu | %6llu | %10llu | %6llu | %3llu | %8llu | %4llu\n",
-               core_id, core_data->core_data_array_previous[core_id].user, core_data->core_data_array_previous[core_id].nice,
-               core_data->core_data_array_previous[core_id].system, core_data->core_data_array_previous[core_id].idle,
-               core_data->core_data_array_previous[core_id].iowait, core_data->core_data_array_previous[core_id].irq,
-               core_data->core_data_array_previous[core_id].soft_irq, core_data->core_data_array_previous[core_id].steal);
-    }
-
-    printf("\nCurrent:\n");
-    printf("%2s | %4s | %4s | %6s | %10s | %6s | %3s | %8s | %4s\n", "ID", "User", "Nice", "System", "Idle", "IOwait", "irq", "soft_irq", "steal");
-    for (core_id = 0; core_id < num_of_cores; ++core_id)
-    {
-        printf("%2u | %4llu | %4llu | %6llu | %10llu | %6llu | %3llu | %8llu | %4llu\n",
-               core_id, core_data->core_data_array_current[core_id].user, core_data->core_data_array_current[core_id].nice,
-               core_data->core_data_array_current[core_id].system, core_data->core_data_array_current[core_id].idle,
-               core_data->core_data_array_current[core_id].iowait, core_data->core_data_array_current[core_id].irq,
-               core_data->core_data_array_current[core_id].soft_irq, core_data->core_data_array_current[core_id].steal);
-    }
-
-    pthread_mutex_unlock(&core_data->mutex);
-}
-
 void *reader_task(void *arg)
 {
     (void)arg;
@@ -119,7 +88,7 @@ void *reader_task(void *arg)
 
     if (pthread_mutex_init(&shared_core_data.mutex, NULL) != 0)
     {
-        perror("Failed to init mutex...\n");
+        perror("Failed to init reader-analyzer mutex...\n");
         exit(1);
     }
 
