@@ -3,10 +3,11 @@
 
 #include <stdio.h>
 #include <pthread.h>
+#include <stdlib.h>
 #include "structs.h"
 #include "shared.h"
 
-unsigned short calculate_core_pload();
+void calculate_core_pload();
 void *analyzer_task(void *args);
 
 #endif

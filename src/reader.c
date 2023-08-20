@@ -1,6 +1,6 @@
 #include "reader.h"
 
-struct timespec reader_sleep_time = {1, 0};
+struct timespec reader_sleep_time = {0, 500000000L};
 unsigned int core_num = 0;
 SharedCoreData shared_core_data = {};
 pthread_cond_t reader_cond = PTHREAD_COND_INITIALIZER;
@@ -138,5 +138,6 @@ void *reader_task(void *arg)
         nanosleep(&reader_sleep_time, NULL);
         read_proc_stat(&shared_core_data, core_num, false);
         pthread_cond_signal(&reader_cond);
+        nanosleep(&reader_sleep_time, NULL);
     }
 }
