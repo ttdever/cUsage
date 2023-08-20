@@ -2,23 +2,23 @@
 
 unsigned int *cpu_pload = NULL;
 
-void calculate_core_pload(SharedCoreData *shared_core_data, const unsigned int core_num)
+void calculate_core_pload(SharedCoreData *core_data, const unsigned int num_of_cores)
 {
 
     unsigned int core_id;
     system("clear");
-    for (core_id = 0; core_id < core_num; ++core_id)
+    for (core_id = 0; core_id < num_of_cores; ++core_id)
     {
-        unsigned long long int idle = shared_core_data->core_data_array_current[core_id].idle + shared_core_data->core_data_array_current[core_id].iowait;
-        unsigned long long int prev_idle = shared_core_data->core_data_array_previous[core_id].idle + shared_core_data->core_data_array_previous[core_id].iowait;
+        unsigned long long int idle = core_data->core_data_array_current[core_id].idle + core_data->core_data_array_current[core_id].iowait;
+        unsigned long long int prev_idle = core_data->core_data_array_previous[core_id].idle + core_data->core_data_array_previous[core_id].iowait;
 
-        unsigned long long int non_idle = shared_core_data->core_data_array_current[core_id].user + shared_core_data->core_data_array_current[core_id].nice +
-                                          shared_core_data->core_data_array_current[core_id].system + shared_core_data->core_data_array_current[core_id].irq +
-                                          shared_core_data->core_data_array_current[core_id].soft_irq + shared_core_data->core_data_array_current[core_id].steal;
+        unsigned long long int non_idle = core_data->core_data_array_current[core_id].user + core_data->core_data_array_current[core_id].nice +
+                                          core_data->core_data_array_current[core_id].system + core_data->core_data_array_current[core_id].irq +
+                                          core_data->core_data_array_current[core_id].soft_irq + core_data->core_data_array_current[core_id].steal;
 
-        unsigned long long int prev_non_idle = shared_core_data->core_data_array_previous[core_id].user + shared_core_data->core_data_array_previous[core_id].nice +
-                                               shared_core_data->core_data_array_previous[core_id].system + shared_core_data->core_data_array_previous[core_id].irq +
-                                               shared_core_data->core_data_array_previous[core_id].soft_irq + shared_core_data->core_data_array_previous[core_id].steal;
+        unsigned long long int prev_non_idle = core_data->core_data_array_previous[core_id].user + core_data->core_data_array_previous[core_id].nice +
+                                               core_data->core_data_array_previous[core_id].system + core_data->core_data_array_previous[core_id].irq +
+                                               core_data->core_data_array_previous[core_id].soft_irq + core_data->core_data_array_previous[core_id].steal;
 
         unsigned long long int total = idle + non_idle;
         unsigned long long int prev_total = prev_idle + prev_non_idle;
@@ -26,7 +26,7 @@ void calculate_core_pload(SharedCoreData *shared_core_data, const unsigned int c
         unsigned long long int total_delta = total - prev_total;
         unsigned long long int idle_delta = idle - prev_idle;
 
-        int core_percentage_load = total_delta == 0 ? 0 : (float)(((float)total_delta - (float)idle_delta) / (float)total_delta) * 100;
+        unsigned int core_percentage_load = total_delta == 0 ? 0 : (unsigned int)((total_delta - idle_delta) * 100 / total_delta);
 
         cpu_pload[core_id] = core_percentage_load;
 

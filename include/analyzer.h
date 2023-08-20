@@ -7,7 +7,7 @@
 #include "structs.h"
 #include "shared.h"
 
-void calculate_core_pload();
+void calculate_core_pload(SharedCoreData *core_data, const unsigned int core_num);
 void *analyzer_task(void *args);
 
 #endif
