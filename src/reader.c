@@ -3,15 +3,29 @@
 
 static struct timespec reader_sleep_time = {0, 500000000L};
 static time_t *execute_time_pointer;
+static FILE *stat_file;
+
 unsigned int core_num = 0;
 SharedCoreData shared_core_data;
 pthread_cond_t reader_cond = PTHREAD_COND_INITIALIZER;
 
+void terminate_reader(int signal)
+{
+    (void)signal;
+    fclose(stat_file);
+    free(shared_core_data.core_data_array_previous);
+    free(shared_core_data.core_data_array_current);
+
+    shared_core_data.core_data_array_previous = NULL;
+    shared_core_data.core_data_array_current = NULL;
+}
+
 unsigned int count_core_num()
 {
-    FILE *stat_file = fopen("/proc/stat", "r");
     char line[4];
     unsigned int core_counter = 0;
+
+    stat_file = fopen("/proc/stat", "r");
 
     if (stat_file == NULL)
     {
@@ -38,10 +52,11 @@ unsigned int count_core_num()
 
 void read_proc_stat(SharedCoreData *core_data, const unsigned int num_of_cores, const int previous)
 {
-    FILE *stat_file = fopen("/proc/stat", "r");
     const char reading_format[] = "cpu%d %llu %llu %llu %llu %llu %llu %llu %llu";
     char line[256];
     unsigned int core_id;
+
+    stat_file = fopen("/proc/stat", "r");
 
     if (stat_file == NULL)
     {
@@ -78,11 +93,11 @@ void read_proc_stat(SharedCoreData *core_data, const unsigned int num_of_cores, 
 
 void *reader_task(void *arg)
 {
+
     execute_time_pointer = (time_t *)arg;
     *execute_time_pointer = time(NULL);
 
     core_num = count_core_num();
-
     if (core_num == 0)
     {
         perror("Wasn't able to count CPU cores...\n");
@@ -105,6 +120,7 @@ void *reader_task(void *arg)
     }
     pthread_mutex_unlock(&shared_core_data.mutex);
 
+    signal(SIGTERM, terminate_reader);
     while (1)
     {
         *execute_time_pointer = time(NULL);

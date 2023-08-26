@@ -3,6 +3,12 @@
 pthread_cond_t printer_cond = PTHREAD_COND_INITIALIZER;
 static time_t *execute_time_pointer;
 
+void terminate_printer(int signal)
+{
+    (void)signal;
+    // No file to close or memory to deallocate
+}
+
 void print_core_data(const unsigned int *cores_percentage_load, const unsigned int cores_number)
 {
     unsigned int core_id;
@@ -25,6 +31,7 @@ void *printer_task(void *args)
     execute_time_pointer = (time_t *)args;
     *execute_time_pointer = time(NULL);
 
+    signal(SIGTERM, terminate_printer);
     while (1)
     {
         *execute_time_pointer = time(NULL);

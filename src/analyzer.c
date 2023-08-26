@@ -4,6 +4,13 @@ unsigned int *cpu_pload = NULL;
 pthread_mutex_t printer_reader_mutex;
 static time_t *execute_time_pointer;
 
+void terminate_analyzer(int signal)
+{
+    (void)signal;
+    free(cpu_pload);
+    cpu_pload = NULL;
+}
+
 void calculate_core_pload(const SharedCoreData *core_data, const unsigned int num_of_cores)
 {
 
@@ -51,6 +58,7 @@ void *analyzer_task(void *args)
         exit(1);
     }
 
+    signal(SIGTERM, terminate_analyzer);
     while (1)
     {
         *execute_time_pointer = time(NULL);
