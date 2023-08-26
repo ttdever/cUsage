@@ -1,7 +1,8 @@
 #include "reader.h"
 #include "shared.h"
 
-struct timespec reader_sleep_time = {0, 500000000L};
+static struct timespec reader_sleep_time = {0, 500000000L};
+static time_t *execute_time_pointer;
 unsigned int core_num = 0;
 SharedCoreData shared_core_data;
 pthread_cond_t reader_cond = PTHREAD_COND_INITIALIZER;
@@ -35,7 +36,7 @@ unsigned int count_core_num()
     return core_counter;
 }
 
-void read_proc_stat(SharedCoreData *core_data, const unsigned int num_of_cores, const bool previous)
+void read_proc_stat(SharedCoreData *core_data, const unsigned int num_of_cores, const int previous)
 {
     FILE *stat_file = fopen("/proc/stat", "r");
     const char reading_format[] = "cpu%d %llu %llu %llu %llu %llu %llu %llu %llu";
@@ -53,7 +54,7 @@ void read_proc_stat(SharedCoreData *core_data, const unsigned int num_of_cores, 
     for (core_id = 0; core_id < num_of_cores; ++core_id)
     {
         fgets(line, sizeof(line), stat_file);
-        if (previous)
+        if (previous == 0)
         {
             sscanf(line, reading_format,
                    &core_id, &core_data->core_data_array_previous[core_id].user, &core_data->core_data_array_previous[core_id].nice,
@@ -77,7 +78,9 @@ void read_proc_stat(SharedCoreData *core_data, const unsigned int num_of_cores, 
 
 void *reader_task(void *arg)
 {
-    (void)arg;
+    execute_time_pointer = (time_t *)arg;
+    *execute_time_pointer = time(NULL);
+
     core_num = count_core_num();
 
     if (core_num == 0)
@@ -104,9 +107,10 @@ void *reader_task(void *arg)
 
     while (1)
     {
-        read_proc_stat(&shared_core_data, core_num, true);
+        *execute_time_pointer = time(NULL);
+        read_proc_stat(&shared_core_data, core_num, 0);
         nanosleep(&reader_sleep_time, NULL);
-        read_proc_stat(&shared_core_data, core_num, false);
+        read_proc_stat(&shared_core_data, core_num, 1);
         pthread_cond_signal(&reader_cond);
         nanosleep(&reader_sleep_time, NULL);
     }

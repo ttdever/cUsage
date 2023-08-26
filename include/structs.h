@@ -1,6 +1,9 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 
+#include <pthread.h>
+#include <time.h>
+
 typedef struct CoreData
 {
     unsigned long long int user;
@@ -19,5 +22,11 @@ typedef struct SharedCoreData
     CoreData *core_data_array_previous;
     CoreData *core_data_array_current;
 } SharedCoreData;
+
+typedef struct
+{
+    pthread_t thread;
+    time_t last_execute_time;
+} WatchedThread;
 
 #endif

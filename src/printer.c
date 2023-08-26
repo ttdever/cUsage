@@ -1,6 +1,7 @@
 #include "printer.h"
 
 pthread_cond_t printer_cond = PTHREAD_COND_INITIALIZER;
+static time_t *execute_time_pointer;
 
 void print_core_data(const unsigned int *cores_percentage_load, const unsigned int cores_number)
 {
@@ -21,10 +22,12 @@ void print_core_data(const unsigned int *cores_percentage_load, const unsigned i
 
 void *printer_task(void *args)
 {
-    (void)args;
+    execute_time_pointer = (time_t *)args;
+    *execute_time_pointer = time(NULL);
 
     while (1)
     {
+        *execute_time_pointer = time(NULL);
         pthread_mutex_lock(&printer_reader_mutex);
         pthread_cond_wait(&printer_cond, &printer_reader_mutex);
         print_core_data(cpu_pload, core_num);

@@ -2,6 +2,7 @@
 
 unsigned int *cpu_pload = NULL;
 pthread_mutex_t printer_reader_mutex;
+static time_t *execute_time_pointer;
 
 void calculate_core_pload(const SharedCoreData *core_data, const unsigned int num_of_cores)
 {
@@ -34,7 +35,8 @@ void calculate_core_pload(const SharedCoreData *core_data, const unsigned int nu
 
 void *analyzer_task(void *args)
 {
-    (void)args;
+    execute_time_pointer = (time_t *)args;
+    *execute_time_pointer = time(NULL);
 
     cpu_pload = (unsigned int *)calloc(core_num, sizeof(unsigned int));
     if (cpu_pload == NULL)
@@ -51,6 +53,7 @@ void *analyzer_task(void *args)
 
     while (1)
     {
+        *execute_time_pointer = time(NULL);
         pthread_mutex_lock(&shared_core_data.mutex);
         pthread_cond_wait(&reader_cond, &shared_core_data.mutex);
         pthread_mutex_lock(&printer_reader_mutex);
