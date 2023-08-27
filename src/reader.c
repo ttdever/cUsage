@@ -13,23 +13,30 @@ void terminate_reader(int signal)
 {
     (void)signal;
     fclose(stat_file);
+    pthread_mutex_lock(&shared_core_data.mutex);
     free(shared_core_data.core_data_array_previous);
     free(shared_core_data.core_data_array_current);
 
     shared_core_data.core_data_array_previous = NULL;
     shared_core_data.core_data_array_current = NULL;
+    pthread_mutex_unlock(&shared_core_data.mutex);
 }
 
 unsigned int count_core_num()
 {
+    return count_core_num_from_file("/proc/stat");
+}
+
+unsigned int count_core_num_from_file(const char *cpu_info_file)
+{
     char line[4];
     unsigned int core_counter = 0;
 
-    stat_file = fopen("/proc/stat", "r");
+    stat_file = fopen(cpu_info_file, "r");
 
     if (stat_file == NULL)
     {
-        perror("Error opening \"/proc/stat\" file...\n");
+        printf("Error opening \"%s\" file...\n", cpu_info_file);
         exit(1);
     }
 

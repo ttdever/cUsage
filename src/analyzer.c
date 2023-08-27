@@ -7,8 +7,10 @@ static time_t *execute_time_pointer;
 void terminate_analyzer(int signal)
 {
     (void)signal;
+    pthread_mutex_lock(&printer_reader_mutex);
     free(cpu_pload);
     cpu_pload = NULL;
+    pthread_mutex_unlock(&printer_reader_mutex);
 }
 
 void calculate_core_pload(const SharedCoreData *core_data, const unsigned int num_of_cores)

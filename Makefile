@@ -18,6 +18,10 @@ BUILD_DIR = build
 SOURCES = $(wildcard $(SRC_DIR)/*.c)
 OBJECTS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SOURCES))
 
+# Tests:
+TEST_SRCS = $(wildcard tests/test_*.c)
+TEST_EXECUTABLES = $(patsubst tests/%.c,$(BUILD_DIR)/%,$(TEST_SRCS))
+
 all: $(TARGET)
 $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) $(OBJECTS) -o $(TARGET)
@@ -29,5 +33,13 @@ run: $(TARGET)
 	./$(TARGET)
 
 clean:
-	rm -f $(TARGET) test_$(TARGET) $(BUILD_DIR)/*.o
+	rm -f $(TARGET) $(BUILD_DIR)/*.o $(TEST_EXECUTABLES)
 
+test: $(TEST_EXECUTABLES)
+	@for test_exec in $(TEST_EXECUTABLES); do \
+		echo "Running $$test_exec"; \
+		$$test_exec; \
+	done
+
+$(BUILD_DIR)/%: tests/%.c $(OBJECTS)
+	$(CC) $(CFLAGS) $(INCLUDES) $(filter-out $(BUILD_DIR)/main.o,$(OBJECTS)) $< -o $@
