@@ -1,12 +1,14 @@
 TARGET = bin/cUsage
 
-# Clang:
-CC = clang
-CFLAGS = -std=c11 -Weverything -pthread
+CC ?= clang
 
-# GCC:
-# CC = gcc
-# CFLAGS = -std=c11 -Wall -Wextra -pthread
+ifeq ($(CC), clang)
+    CFLAGS = -std=c11 -Weverything -pthread
+else ifeq ($(CC), gcc)
+    CFLAGS = -std=c11 -Wall -Wextra -pthread
+else
+    $(error Unknown compiler: $(CC))
+endif
 
 # Dirs and includes
 SRC_DIR = src
